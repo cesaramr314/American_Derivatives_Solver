@@ -1,0 +1,20 @@
+# Build folders (Linux/Mac and Visual Studio)
+build/
+out/
+cmake-build-*/
+
+# Editor files
+.vs/
+.vscode/
+.idea/
+CMakeUserPresets.json
+
+# Generated files
+*.o
+*.obj
+*.a
+*.lib
+*.exe
+compile_commands.json
+__pycache__/
+.DS_Store
