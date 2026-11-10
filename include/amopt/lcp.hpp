@@ -16,12 +16,13 @@ namespace amopt {
 		virtual std::string name() const = 0;
 	};
 
-	// Projected SOR [Cryer, 1971]
+	// Projected SOR [Cryer, 1971]. If adaptive, omega is tuned between calls
+	// (time steps) by hill climbing on the number of sweeps.
 	class PsorSolver final : public LcpSolver {
 	public:
-		explicit PsorSolver(double omega = 1.5, double tol = 1e-8, int max_iter = 100000)
-			: omega_(omega), tol_(tol), max_iter_(max_iter) {
-		}
+		explicit PsorSolver(double omega = 1.5, double tol = 1e-8, int max_iter = 100000,
+			bool adaptive = false)
+			: omega_(omega), tol_(tol), max_iter_(max_iter), adaptive_(adaptive) { }
 		int solve(const Tridiag& A, const std::vector<double>& b,
 			const std::vector<double>& g, std::vector<double>& u) override;
 		std::string name() const override { return "psor"; }
@@ -29,6 +30,9 @@ namespace amopt {
 	private:
 		double omega_, tol_;
 		int max_iter_;
+		bool adaptive_;
+		int last_iters_ = 0;   // sweeps used in the previous call
+		double step_ = 0.02;   // current change of omega (its sign is the direction)
 	};
 
 	// Penalty method [Forsyth et.al.,  2002]; penalty factor should be ~ 1/tol.
