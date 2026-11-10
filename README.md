@@ -150,7 +150,7 @@ results/         benchmark data and figures
 
 ## Use of AI tools
 
-Claude Opus 5.5 (Anthropic) was used extensively for cleaning, optimizing and refactoring the code, and for generating most of the tests and benchmarks, as well as this README. All generated files were reviewed in detail before being included.
+Claude Opus 5.5 (Anthropic) was used extensively for cleaning, optimizing and refactoring the code, and for generating most of the tests and benchmarks. All generated files were reviewed in detail before being included.
 
 ## License
 
