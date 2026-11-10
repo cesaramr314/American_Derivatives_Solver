@@ -5,8 +5,8 @@
 
 namespace amopt {
 
-	// Árbol binomial de Cox-Ross-Rubinstein. Promedia n y n+1 pasos para
-	// amortiguar la oscilación par/impar. Sirve como referencia independiente.
+	// Cox-Ross-Rubinstein binomial tree. Averages n and n+1 steps to damp
+	// the even/odd oscillation. Used as an independent reference.
 	double binomial_crr(const OptionSpec& o, const Payoff& payoff, int steps);
 
 }  // namespace amopt
