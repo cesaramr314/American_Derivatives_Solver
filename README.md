@@ -1,10 +1,10 @@
 # American Derivatives Solver
 
-A small C++17 library that prices European and American options by solving the **Black–Scholes PDE with finite differences**. Early exercise turns pricing into a free boundary problem, which at every time step becomes a linear complementarity problem (LCP). The repository solves it with two classical methods, **projected SOR** and the **penalty method**, and compares them on the same grid and the same discretization.
+A small C++17 library that prices European and American options by solving the **Black–Scholes PDE with finite differences**. Early exercise turns pricing into a free boundary problem, which at every time step becomes a linear complementarity problem (LCP). The repository solves it with two classical methods, **projected SOR** and the **penalty method**, and compares them on the same grid and the same discretization. A variant of PSOR with an adaptive relaxation factor is also included.
 
 It was built as a first multi-file C++ project, with tests, a benchmark and a CMake build that works on Windows (Visual Studio), Linux and macOS.
 
-![error vs time](results/error_vs_time.png)
+<p align="center"><img src="results/error_vs_time.png" alt="error vs time" width="60%"></p>
 
 ## The problem
 
@@ -38,7 +38,7 @@ $$
 
 with $A$ tridiagonal. The two solvers share everything else, so the comparison only measures how this LCP is solved.
 
-- **PSOR.** Projected Gauss–Seidel with over-relaxation $\omega = 1.5$, started from the previous time step and stopped when the relative change between sweeps is below the tolerance.
+- **PSOR.** Projected Gauss–Seidel with over-relaxation $\omega = 1.5$, started from the previous time step and stopped when the relative change between sweeps is below the tolerance. Optionally, $\omega$ is adapted between time steps by hill climbing on the number of sweeps (it keeps moving in the same direction while the sweeps decrease, and reverses otherwise), restricted to $[1, 1.95]$.
 - **Penalty.** The constraint is replaced by a penalty term $\rho \max(g - u, 0)$, solved with a Newton-type iteration
 
 $$
@@ -66,7 +66,7 @@ All of them can be priced with European or American exercise. A new payoff only 
 - every European payoff against the Black–Scholes closed form, and $\Delta$, $\Gamma$ of the call;
 - second order convergence in the European case (error ratio $\approx 4$ when the grid is halved);
 - the American call without dividends equals the European call;
-- PSOR and penalty give the same price on the same grid;
+- PSOR (fixed and adaptive $\omega$) and penalty give the same price on the same grid;
 - American put, call and straddle against a Cox–Ross–Rubinstein binomial tree;
 - American binaries against the closed-form one-touch price (Reiner–Rubinstein);
 - $V_{\text{American}} \ge V_{\text{European}}$ and $V \ge g$ on the whole grid.
@@ -75,21 +75,22 @@ All of them can be priced with European or American exercise. A new payoff only 
 
 American put with $S_0 = K = 100$, $r = 0.05$, $q = 0$, $\sigma = 0.3$, $T = 1$, refining the grid with $\Delta t \propto \Delta x$. The reference value is a penalty run on a $16000 \times 8000$ grid.
 
-| $N$ | PSOR error | penalty error | PSOR sweeps/step | penalty solves/step | PSOR time (s) | penalty time (s) |
-|---:|---:|---:|---:|---:|---:|---:|
-| 100  | 2.6e-2 | 2.6e-2 | 16.9 | 1.17 | 0.0010 | 0.0001 |
-| 200  | 7.1e-3 | 7.1e-3 | 12.3 | 1.19 | 0.0031 | 0.0004 |
-| 400  | 2.0e-3 | 2.0e-3 | 10.1 | 1.18 | 0.011  | 0.0017 |
-| 800  | 6.1e-4 | 6.1e-4 | 14.1 | 1.19 | 0.062  | 0.0087 |
-| 1600 | 2.1e-4 | 1.9e-4 | 24.7 | 1.19 | 0.39   | 0.027  |
-| 3200 | 1.3e-4 | 6.2e-5 | 43.0 | 1.20 | 2.75   | 0.11   |
+| $N$ | PSOR error | adaptive PSOR error | penalty error | PSOR sweeps/step | adaptive PSOR sweeps/step | penalty solves/step | PSOR time (s) | adaptive PSOR time (s) | penalty time (s) |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100  | 2.6e-2 | 2.6e-2 | 2.6e-2 | 16.9 | 10.3 | 1.17 | 0.0010 | 0.0006 | 0.0001 |
+| 200  | 7.1e-3 | 7.1e-3 | 7.1e-3 | 12.3 | 9.3  | 1.19 | 0.0030 | 0.0022 | 0.0004 |
+| 400  | 2.0e-3 | 2.0e-3 | 2.0e-3 | 10.1 | 9.9  | 1.18 | 0.0084 | 0.0083 | 0.0014 |
+| 800  | 6.1e-4 | 6.1e-4 | 6.1e-4 | 14.1 | 11.3 | 1.19 | 0.047  | 0.039  | 0.0057 |
+| 1600 | 2.1e-4 | 2.0e-4 | 1.9e-4 | 24.7 | 13.0 | 1.19 | 0.34   | 0.18   | 0.024  |
+| 3200 | 1.3e-4 | 7.3e-5 | 6.2e-5 | 43.0 | 17.4 | 1.20 | 2.43   | 1.01   | 0.11   |
 
-![iterations](results/iterations.png)
+<p align="center"><img src="results/iterations.png" alt="iterations per time step" width="60%"></p>
 
 The main observations:
 
-- The penalty method needs about one tridiagonal solve per time step, independently of the grid, so its cost scales like $O(NM)$. PSOR needs more and more sweeps as the grid is refined (the spectral radius of the iteration tends to 1), and on the finest grid it is about 25 times slower.
-- On fine grids PSOR is also **less accurate** with the same tolerance. Its stopping rule measures the change between sweeps, which underestimates the actual error when the iteration converges slowly.
+- The penalty method needs about one tridiagonal solve per time step, independently of the grid, so its cost scales like $O(NM)$. PSOR needs more and more sweeps as the grid is refined (the spectral radius of the iteration tends to 1), and on the finest grid it is about 20 times slower.
+- Adapting $\omega$ reduces the PSOR sweeps by more than half on fine grids, but they still grow with $N$, and the penalty method remains about 9 times faster on the finest grid.
+- On fine grids PSOR with fixed $\omega$ is also **less accurate** with the same tolerance. Its stopping rule measures the change between sweeps, which underestimates the actual error when the iteration converges slowly.
 - The penalty error ratios when doubling $N$ are between 3 and 3.6, between first and second order. This is expected, since the solution is only $C^1$ across the free boundary and the free boundary is not aligned with the grid. In the European case the ratio is 4.
 
 Times are from a single machine and change from one computer to another; the ratios between methods are what matters.
@@ -105,7 +106,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ctest --test-dir build --output-on-failure        # tests
 ./build/amopt_price                               # price table for all payoffs
-./build/amopt_benchmark results/benchmark.csv     # PSOR vs penalty (~15 s)
+./build/amopt_benchmark results/benchmark.csv     # PSOR vs penalty (~20 s)
 python3 scripts/plot_benchmark.py results/benchmark.csv
 ```
 
@@ -120,7 +121,7 @@ Minimal usage of the library:
 amopt::OptionSpec opt;                      // S0 = 100, r = 0.05, sigma = 0.2, T = 1
 opt.exercise = amopt::Exercise::American;
 amopt::PutPayoff put(100.0);
-amopt::PenaltySolver penalty;               // or amopt::PsorSolver psor;
+amopt::PenaltySolver penalty;               // or PsorSolver psor; adaptive: PsorSolver psor(1.5, 1e-8, 100000, true);
 amopt::GridConfig cfg;                      // 400 x 200 grid
 
 auto res = amopt::price_pde(opt, put, cfg, &penalty);
@@ -132,7 +133,7 @@ auto res = amopt::price_pde(opt, put, cfg, &penalty);
 ```
 include/amopt/   headers: payoffs, tridiagonal solver, LCP solvers, PDE solver
 src/             implementation of the library
-apps/            price.cpp (price table) and benchmark.cpp (PSOR vs penalty)
+apps/            price.cpp (price table) and benchmark.cpp (PSOR, adaptive PSOR and penalty)
 tests/           validation tests, run with CTest
 scripts/         plot_benchmark.py
 results/         benchmark data and figures
