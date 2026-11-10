@@ -21,7 +21,16 @@ namespace amopt {
 				err = std::max(err, std::abs(unew - u[i]) / std::max(1.0, std::abs(unew)));
 				u[i] = unew;
 			}
-			if (err < tol_) return k;
+			if (err < tol_) {
+				if (adaptive_) {
+					// Keep moving omega while the number of sweeps decreases,
+					// reverse the direction otherwise.
+					if (last_iters_ > 0 && k > last_iters_) step_ = -step_;
+					last_iters_ = k;
+					omega_ = std::clamp(omega_ + step_, 1.0, 1.95);
+				}
+				return k;
+			}
 		}
 		throw std::runtime_error("PSOR did not converge. Increase max_iter or check omega");
 	}
