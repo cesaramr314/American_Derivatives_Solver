@@ -114,13 +114,16 @@ namespace {
     void test_psor_and_penalty_agree() {
         const OptionSpec o = base_spec(Exercise::American);
         PsorSolver psor(1.5, 1e-10);
+        PsorSolver psor_adaptive(1.5, 1e-10, 100000, true);
         PenaltySolver pen(1e-8);
         const PutPayoff put(100.0);
         const CashOrNothingPut dput(100.0, 1.0);
-        CHECK_CLOSE(price_pde(o, put, fine_grid(), &psor).price,
-            price_pde(o, put, fine_grid(), &pen).price, 1e-6);
-        CHECK_CLOSE(price_pde(o, dput, fine_grid(), &psor).price,
-            price_pde(o, dput, fine_grid(), &pen).price, 1e-6);
+        const double v_put = price_pde(o, put, fine_grid(), &pen).price;
+        const double v_dput = price_pde(o, dput, fine_grid(), &pen).price;
+        CHECK_CLOSE(price_pde(o, put, fine_grid(), &psor).price, v_put, 1e-6);
+        CHECK_CLOSE(price_pde(o, dput, fine_grid(), &psor).price, v_dput, 1e-6);
+        CHECK_CLOSE(price_pde(o, put, fine_grid(), &psor_adaptive).price, v_put, 1e-6);
+        CHECK_CLOSE(price_pde(o, dput, fine_grid(), &psor_adaptive).price, v_dput, 1e-6);
     }
 
     void test_american_vs_binomial() {

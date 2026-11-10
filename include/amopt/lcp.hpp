@@ -25,7 +25,7 @@ namespace amopt {
 			: omega_(omega), tol_(tol), max_iter_(max_iter), adaptive_(adaptive) { }
 		int solve(const Tridiag& A, const std::vector<double>& b,
 			const std::vector<double>& g, std::vector<double>& u) override;
-		std::string name() const override { return "psor"; }
+		std::string name() const override { return adaptive_ ? "psor-adaptive" : "psor"; }
 
 	private:
 		double omega_, tol_;
