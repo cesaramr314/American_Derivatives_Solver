@@ -1,5 +1,7 @@
-// Pruebas sin dependencias externas. Cada TEST registra fallos con CHECK_*;
-// el ejecutable regresa 1 si algo falló (así CTest lo detecta).
+// Validation tests for the amopt library.
+//
+// No external test framework: each test records failures through the CHECK_* macros,
+// and the executable returns 1 if any check failed (this is how CTest detects it).
 #include <cmath>
 #include <cstdio>
 #include <functional>
@@ -19,7 +21,7 @@ static int g_failures = 0;
 #define CHECK_TRUE(cond)                                                       \
     do {                                                                       \
         if (!(cond)) {                                                         \
-            std::printf("  FALLO %s:%d: %s\n", __FILE__, __LINE__, #cond);     \
+            std::printf("  FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond);     \
             ++g_failures;                                                      \
         }                                                                      \
     } while (0)
@@ -28,7 +30,7 @@ static int g_failures = 0;
     do {                                                                       \
         const double va_ = (a), vb_ = (b);                                     \
         if (std::abs(va_ - vb_) > (tol)) {                                     \
-            std::printf("  FALLO %s:%d: %s = %.8f vs %s = %.8f (tol %.1e)\n",  \
+            std::printf("  FAIL %s:%d: %s = %.8f vs %s = %.8f (tol %.1e)\n",  \
                         __FILE__, __LINE__, #a, va_, #b, vb_, (double)(tol));  \
             ++g_failures;                                                      \
         }                                                                      \
@@ -86,7 +88,7 @@ namespace {
     }
 
     void test_european_greeks() {
-        // Delta de un call europeo: e^{-qT} N(d1).
+        // European call: Delta = e^{-qT} N(d1), Gamma = e^{-qT} phi(d1) / (S0 sigma sqrt(T)).
         const OptionSpec o = base_spec(Exercise::European);
         const double K = 100.0;
         const double sd = o.sigma * std::sqrt(o.T);
@@ -135,7 +137,7 @@ namespace {
     }
 
     void test_american_digital_vs_one_touch() {
-        // La binaria americana tiene fórmula cerrada: es una one-touch.
+        // The American cash-or-nothing option is a one-touch, which has a closed form.
         const OptionSpec o = base_spec(Exercise::American);
         PenaltySolver pen;
         PsorSolver psor;
@@ -143,13 +145,13 @@ namespace {
             one_touch(o, 110.0, 1.0, true), 1e-4);
         CHECK_CLOSE(price_pde(o, CashOrNothingPut(90.0, 1.0), fine_grid(), &psor).price,
             one_touch(o, 90.0, 1.0, false), 1e-4);
-        // Asset-or-nothing americana: al tocar K se cobra S = K.
+        // American asset-or-nothing call: when S hits K the holder collects S = K.
         CHECK_CLOSE(price_pde(o, AssetOrNothingCall(110.0), fine_grid(), &pen).price,
             110.0 * one_touch(o, 110.0, 1.0, true), 1e-2);
     }
 
     void test_american_bounds() {
-        // V_americana >= V_europea  y  V >= payoff en toda la malla.
+        // V_american >= V_european, and V >= payoff on the whole grid.
         const OptionSpec am = base_spec(Exercise::American);
         const OptionSpec eu = base_spec(Exercise::European);
         PenaltySolver pen;
@@ -163,7 +165,7 @@ namespace {
     }
 
     void test_second_order_convergence() {
-        // Errores con N, 2N, 4N: el cociente e(N)/e(2N) debe acercarse a 4.
+        // Errors with N, 2N, 4N: the ratio e(N)/e(2N) should approach 4.
         const OptionSpec o = base_spec(Exercise::European);
         const double exact = bs_put(o, 100.0);
         const PutPayoff put(100.0);
@@ -175,7 +177,7 @@ namespace {
             err.push_back(std::abs(price_pde(o, put, c).price - exact));
         }
         const double ratio1 = err[0] / err[1], ratio2 = err[1] / err[2];
-        std::printf("  cocientes de error: %.2f, %.2f\n", ratio1, ratio2);
+        std::printf("  error ratios: %.2f, %.2f\n", ratio1, ratio2);
         CHECK_TRUE(ratio1 > 3.0 && ratio1 < 5.0);
         CHECK_TRUE(ratio2 > 3.0 && ratio2 < 5.0);
     }
@@ -200,6 +202,6 @@ int main() {
         fn();
         std::printf("[ %s ] %s\n", g_failures == before ? " OK " : "FAIL", name.c_str());
     }
-    std::printf("\n%s (%d fallos)\n", g_failures == 0 ? "TODO BIEN" : "HAY FALLOS", g_failures);
+    std::printf("\n%s (%d failures)\n", g_failures == 0 ? "ALL PASSED" : "SOME TESTS FAILED", g_failures);
     return g_failures == 0 ? 0 : 1;
 }
