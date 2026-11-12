@@ -1,6 +1,6 @@
 # American Derivatives Solver
 
-A small C++17 library that prices European and American options by solving the **Black–Scholes PDE with finite differences**. Early exercise turns pricing into a free boundary problem, which at every time step becomes a linear complementarity problem (LCP). The repository solves it with two classical methods, **projected SOR** and the **penalty method**, and compares them on the same grid and the same discretization. A variant of PSOR with an adaptive relaxation factor is also included.
+A small C++17 library for pricing European and American options with finite differences. The early-exercise constraint turns the Black–Scholes equation into a free boundary problem, solved as a linear complementarity problem (LCP) with two classical schemes, projected SOR (with fixed and adaptive relaxation parameter) and the penalty method, whose performance is compared. Validation tests are also included.
 
 It was built as a first multi-file C++ project, with tests, a benchmark and a CMake build that works on Windows (Visual Studio), Linux and macOS.
 
